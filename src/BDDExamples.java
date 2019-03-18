@@ -2,6 +2,8 @@ import net.sf.javabdd.*;
 
 /**
  * Class to give some examples of the usage of the BDD package
+ * @author Mai Ajspur
+ * @version 16.02.2018
  */
 public class BDDExamples {
 
@@ -67,10 +69,5 @@ public class BDDExamples {
 		// Lastly notice, that there are version of many of the above mentioned methods (e.g. 'or')
 		// that ends with "With". The latter methods transforms/consumes the calling BDD 
 		// instead of returning a new BDD
-
-		BDDFactory myF = JFactory.init(200, 200);
-		myF.setVarNum(3*3);
-		myF.printAll();
-
 	}
 }

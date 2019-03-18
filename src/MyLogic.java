@@ -2,6 +2,12 @@ import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDFactory;
 import net.sf.javabdd.JFactory;
 
+/**
+ * @author Sabina Hult
+ * Solving the n-queens puzzle with the assistance of binary decision diagrams
+ * as part of the course Intelligent Systems Programming, ITU 2019
+ * @version 18.3.2019
+ */
 public class MyLogic implements IQueensLogic {
     // only square boards allowed
     private int size;
@@ -23,17 +29,22 @@ public class MyLogic implements IQueensLogic {
     }
 
     private BDD createBDDFromRules(int n) {
+        // TODO: Not enough to avoid a resize with n = 8 as the method is now...
+        // But it works, hooray!
         fact = JFactory.init(200000, 200000);
         fact.setVarNum(n * n);
 
         // not necessary, but makes the rest more readable
-        BDD True = fact.one();
 
         // the main BDD being built up as we go along
-        BDD build = True;
+        BDD build = fact.one();
+
+        // adding the one-queen-in-each-column rule
+        BDD oneInEach = nQueensRule();
+        build.andWith(oneInEach);
 
         // BDD with diagonal rule for all variables
-        BDD diagonal = True;
+        BDD diagonal = fact.one();
         // attempt at enforcing the diagonal restriction rule
         for(int r = 0; r < size; r++) {
             for(int c = 0; c < size; c++) {
@@ -46,7 +57,7 @@ public class MyLogic implements IQueensLogic {
         build.andWith(diagonal);
 
         // BDD with horizontal rule for all variables
-        BDD horizontal = True;
+        BDD horizontal = fact.one();
         // attempt at enforcing the horizontal restriction rule
         for(int r = 0; r < size; r++) {
             for(int c = 0; c < size; c++) {
@@ -58,7 +69,7 @@ public class MyLogic implements IQueensLogic {
         // add horizontal rules into main BDD
         build.andWith(horizontal);
 
-        BDD vertical = True;
+        BDD vertical = fact.one();
         // attempt at enforcing the vertical restriction rule
         for(int r = 0; r < size; r++) {
             for(int c = 0; c < size; c++) {
@@ -70,6 +81,25 @@ public class MyLogic implements IQueensLogic {
         // add vertical rules into main BDD
         build.andWith(vertical);
         return build;
+    }
+
+    private BDD nQueensRule() {
+        BDD oneInEachColumn = fact.one();
+
+        // for every column
+        for(int c = 0; c < size; c++) {
+            // either it's false
+            BDD column = fact.zero();
+            for(int r = 0; r < size; r++) {
+                // or one of the variables in the column are true
+                column.orWith(fact.ithVar(convertToVarID(c, r)));
+            }
+
+            // combine rules for each column into one BDD
+            oneInEachColumn.andWith(column);
+        }
+
+        return oneInEachColumn;
     }
 
     private BDD diagonalRule(int c, int r) {
@@ -208,13 +238,8 @@ public class MyLogic implements IQueensLogic {
     private void updateBoard() {
         for(int r = 0; r < size; r++) {
             for(int c = 0; c < size; c++) {
-                if(isPositionInvalid(c, r)) {
-                    board[c][r] = -1;
-                }
-
-                //else if(mustThereBeAQueen(c, r)) {
-                //    board[c][r] = 1;
-                //}
+                if(isPositionInvalid(c, r)) board[c][r] = -1; // set an x
+                else if(mustThereBeAQueen(c, r)) board[c][r] = 1; // set a queen
             }
         }
     }
@@ -230,15 +255,12 @@ public class MyLogic implements IQueensLogic {
     }
 
     /**
-     * Check if NOT adding a queen at [c,r] makes the BDD unsatifiable
-     * TODO: Does not currently function...
+     * Check if NOT adding a queen at [c,r] makes the BDD unsatisfiable
      */
     private boolean mustThereBeAQueen(int col, int row) {
         // do not place a queen at [col, row]
-        BDD test = bdd.restrictWith(fact.nithVar(convertToVarID(col, row)));
+        BDD test = bdd.restrict(fact.nithVar(convertToVarID(col, row)));
         // does that make the bdd unsatisfiable?
-        boolean result = test.isZero();
-        if(result) System.out.println("[" + col + "," + row + "] must have a queen.");
-        return result;
+        return test.isZero();
     }
 }
