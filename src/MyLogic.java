@@ -8,6 +8,7 @@ import net.sf.javabdd.JFactory;
  * as part of the course Intelligent Systems Programming, ITU 2019
  * @version 18.3.2019
  */
+
 public class MyLogic implements IQueensLogic {
     // only square boards allowed
     private int size;
@@ -21,68 +22,36 @@ public class MyLogic implements IQueensLogic {
     public void initializeBoard(int size) {
         this.size = size;
         board = new int[size][size];
-
-        bdd = createBDDFromRules(size);
-
-        //System.out.println("Final BDD:");
-        //fact.printTable(bdd);
+        bdd = buildBDDFromRules(size);
     }
 
-    private BDD createBDDFromRules(int n) {
-        // TODO: Not enough to avoid a resize with n = 8 as the method is now...
-        // But it works, hooray!
-        fact = JFactory.init(200000, 200000);
+    private BDD buildBDDFromRules(int n) {
+        // initialize the factory with the parameters given in the assignment
+        fact = JFactory.init(2000000, 200000);
         fact.setVarNum(n * n);
 
-        // not necessary, but makes the rest more readable
+        // start with a BDD corresponding to True
+        BDD bdd = fact.one();
+        // add the one-queen-in-each-column rule
+        bdd.andWith(nQueensRule());
 
-        // the main BDD being built up as we go along
-        BDD build = fact.one();
-
-        // adding the one-queen-in-each-column rule
-        BDD oneInEach = nQueensRule();
-        build.andWith(oneInEach);
-
-        // BDD with diagonal rule for all variables
-        BDD diagonal = fact.one();
-        // attempt at enforcing the diagonal restriction rule
-        for(int r = 0; r < size; r++) {
-            for(int c = 0; c < size; c++) {
-                diagonal.andWith(diagonalRule(c, r));
+        // for each variable add diagonal rule, horizontal rule and vertical rule
+        for(int i = 0; i < size; i++) {
+            for(int j = 0; j < size; j++) {
+                bdd.andWith(diagonalRule(i, j));
+                bdd.andWith(horizontalRule(i, j));
+                bdd.andWith(verticalRule(i, j));
             }
-            //System.out.println();
         }
 
-        // add diagonal rules into main BDD
-        build.andWith(diagonal);
-
-        // BDD with horizontal rule for all variables
-        BDD horizontal = fact.one();
-        // attempt at enforcing the horizontal restriction rule
-        for(int r = 0; r < size; r++) {
-            for(int c = 0; c < size; c++) {
-                horizontal.andWith(horizontalRule(c, r));
-            }
-            //System.out.println();
-        }
-
-        // add horizontal rules into main BDD
-        build.andWith(horizontal);
-
-        BDD vertical = fact.one();
-        // attempt at enforcing the vertical restriction rule
-        for(int r = 0; r < size; r++) {
-            for(int c = 0; c < size; c++) {
-                vertical.andWith(verticalRule(c, r));
-            }
-            //System.out.println();
-        }
-
-        // add vertical rules into main BDD
-        build.andWith(vertical);
-        return build;
+        return bdd;
     }
 
+    /**
+     * Returns the BDD corresponding to if for all c in {0, 1, .., size-1}
+     * exactly one is true, else false
+     * TODO: This method messes things up with n = 6...
+     */
     private BDD nQueensRule() {
         BDD oneInEachColumn = fact.one();
 
@@ -102,9 +71,11 @@ public class MyLogic implements IQueensLogic {
         return oneInEachColumn;
     }
 
+    /**
+     * Returns the BDD corresponding to if x[c,r] then
+     * not all other variables in both diagonals, else false
+     */
     private BDD diagonalRule(int c, int r) {
-        //System.out.println("Generating diagonal rule for ["+c+","+r+"]" + " Var: " + convertToVarID(c, r));
-
         // set [c,r] to be true
         BDD bdd = fact.ithVar(convertToVarID(c, r));
 
@@ -114,29 +85,13 @@ public class MyLogic implements IQueensLogic {
         int down = r+1;
 
         // at most size-1 variables in any given direction should be negated
-        // this is definitely not cache efficient, but correctness first,
-        // then efficiency later (if time permits!)
         for(int i = 0; i < size; i++) {
 
-            if(left >= 0 && up >= 0) {
-                bdd.andWith(fact.nithVar(convertToVarID(left, up)));
-                //System.out.print(String.format("LU: %d,%d ", left, up));
-            }
-
-            if(left >=0  && down < size) {
-                bdd.andWith(fact.nithVar(convertToVarID(left, down)));
-                //System.out.print(String.format("LD: %d,%d ", left, down));
-            }
-
-            if(right < size && up >= 0) {
-                bdd.andWith(fact.nithVar(convertToVarID(right, up)));
-                //System.out.print(String.format("RU: %d,%d ", right, up));
-            }
-
-            if(right < size && down < size) {
-                bdd.andWith(fact.nithVar(convertToVarID(right, down)));
-                //System.out.print(String.format("RD: %d,%d ", right, down));
-            }
+            // fan out in both diagonals from [c,r] and set the variables to false
+            if(left >= 0 && up >= 0) bdd.andWith(fact.nithVar(convertToVarID(left, up)));
+            if(left >=0  && down < size) bdd.andWith(fact.nithVar(convertToVarID(left, down)));
+            if(right < size && up >= 0) bdd.andWith(fact.nithVar(convertToVarID(right, up)));
+            if(right < size && down < size) bdd.andWith(fact.nithVar(convertToVarID(right, down)));
 
             left--;
             right++;
@@ -147,61 +102,46 @@ public class MyLogic implements IQueensLogic {
 
         // either all of the above is true, or [c,r] is false
         bdd.orWith(fact.nithVar(convertToVarID(c, r)));
-
-        //System.out.println("\nThe resulting BDD:");
-        //fact.printTable(bdd);
-        //System.out.println();
-
         return bdd;
     }
 
+    /**
+     * Returns the BDD corresponding to if x[c,r] then
+     * not all other variables in same row, else false
+     */
     private BDD horizontalRule(int c, int r) {
-        //System.out.println("Generating horizontal rule for ["+c+","+r+"]" + " Var: " + convertToVarID(c, r));
-
         // set [c,r] to be true
         BDD bdd = fact.ithVar(convertToVarID(c, r));
 
         // set all other in same row to be false
-        //System.out.print("Set these to false: ");
         for(int i = 0; i < size; i++) {
             if(i != c) {
-                //System.out.print(convertToVarID(i, r) + " ");
                 bdd.andWith(fact.nithVar(convertToVarID(i, r)));
             }
         }
 
         // either all of the above is true or [c,r] is false
         bdd.orWith(fact.nithVar(convertToVarID(c, r)));
-
-        //System.out.println("\nThe resulting BDD:");
-        //fact.printTable(bdd);
-        //System.out.println();
-
         return bdd;
     }
 
+    /**
+     * Returns the BDD corresponding to if x[c,r] then
+     * not all other variables same column, else false
+     */
     private BDD verticalRule(int c, int r) {
-        //System.out.println("Generating vertical rule for ["+c+","+r+"]" + " Var: " + convertToVarID(c, r));
-
         // set [c,r] to be true
         BDD bdd = fact.ithVar(convertToVarID(c, r));
 
         // set all other in same col to be false
-        //System.out.print("Set these to false: ");
         for(int i = 0; i < size; i++) {
             if(i != r) {
-                //System.out.print(convertToVarID(c, i) + " ");
                 bdd.andWith(fact.nithVar(convertToVarID(c, i)));
             }
         }
 
         // either all of the above is true, or [c,r] is false
         bdd.orWith(fact.nithVar(convertToVarID(c, r)));
-
-        //System.out.println("\nThe resulting BDD:");
-        //fact.printTable(bdd);
-        //System.out.println();
-
         return bdd;
     }
 
@@ -238,8 +178,10 @@ public class MyLogic implements IQueensLogic {
     private void updateBoard() {
         for(int r = 0; r < size; r++) {
             for(int c = 0; c < size; c++) {
-                if(isPositionInvalid(c, r)) board[c][r] = -1; // set an x
-                else if(mustThereBeAQueen(c, r)) board[c][r] = 1; // set a queen
+                // set an x?
+                if(isPositionInvalid(c, r)) board[c][r] = -1;
+                    // set a queen?
+                else if(mustThereBeAQueen(c, r)) board[c][r] = 1;
             }
         }
     }
