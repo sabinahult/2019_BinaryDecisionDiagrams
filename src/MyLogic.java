@@ -44,13 +44,14 @@ public class MyLogic implements IQueensLogic {
             }
         }
 
+        System.out.println("Satisfying assignments: " + bdd.satCount());
+        System.out.println("Number of nodes: " + bdd.nodeCount());
         return bdd;
     }
 
     /**
-     * Returns the BDD corresponding to if for all c in {0, 1, .., size-1}
-     * exactly one is true, else false
-     * TODO: This method messes things up with n = 6...
+     * Returns the BDD corresponding to for all columns
+     * exactly one row is true, else false
      */
     private BDD nQueensRule() {
         BDD oneInEachColumn = fact.one();
@@ -64,7 +65,7 @@ public class MyLogic implements IQueensLogic {
                 column.orWith(fact.ithVar(convertToVarID(c, r)));
             }
 
-            // combine rules for each column into one BDD
+            // the bdd for each column has to be true in order for the combined bdd to be true
             oneInEachColumn.andWith(column);
         }
 
@@ -106,8 +107,8 @@ public class MyLogic implements IQueensLogic {
     }
 
     /**
-     * Returns the BDD corresponding to if x[c,r] then
-     * not all other variables in same row, else false
+     * Returns the BDD corresponding to if [c,r] then
+     * not all other variables in the same same row, else false
      */
     private BDD horizontalRule(int c, int r) {
         // set [c,r] to be true
@@ -126,8 +127,8 @@ public class MyLogic implements IQueensLogic {
     }
 
     /**
-     * Returns the BDD corresponding to if x[c,r] then
-     * not all other variables same column, else false
+     * Returns the BDD corresponding to if [c,r] then
+     * not all other variables in the same column, else false
      */
     private BDD verticalRule(int c, int r) {
         // set [c,r] to be true
@@ -164,7 +165,7 @@ public class MyLogic implements IQueensLogic {
     }
 
     /**
-     * Convert the board position [c, r] to the corresponding variable
+     * Convert the board position [c,r] to the corresponding variable
      * in the BDD
      */
     private int convertToVarID(int column, int row) {
