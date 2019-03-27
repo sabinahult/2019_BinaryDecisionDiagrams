@@ -44,6 +44,7 @@ public class MyLogic implements IQueensLogic {
             }
         }
 
+        System.out.println("Board: " + n + "x" + n);
         System.out.println("Satisfying assignments: " + bdd.satCount());
         System.out.println("Number of nodes: " + bdd.nodeCount());
         return bdd;
@@ -51,14 +52,14 @@ public class MyLogic implements IQueensLogic {
 
     /**
      * Returns the BDD corresponding to for all columns
-     * exactly one row is true, else false
+     * exactly one row has a queen, else false
      */
     private BDD nQueensRule() {
         BDD oneInEachColumn = fact.one();
 
         // for every column
         for(int c = 0; c < size; c++) {
-            // either it's false
+            // either bdd is false
             BDD column = fact.zero();
             for(int r = 0; r < size; r++) {
                 // or one of the variables in the column are true
@@ -173,22 +174,23 @@ public class MyLogic implements IQueensLogic {
     }
 
     /**
-     * Update the board such that positions that are rendered invalid after placing
-     * a queen get's value -1
+     * Update the board such that positions that are rendered invalid get's
+     * value -1 and positions where a queen MUST be placed get's a 1
      */
     private void updateBoard() {
         for(int r = 0; r < size; r++) {
             for(int c = 0; c < size; c++) {
                 // set an x?
                 if(isPositionInvalid(c, r)) board[c][r] = -1;
-                    // set a queen?
+                // set a queen?
                 else if(mustThereBeAQueen(c, r)) board[c][r] = 1;
             }
         }
     }
 
     /**
-     * Check if adding a queen to [c,r] will make the bdd unsatisfiable
+     * Check if adding a queen to [c,r], i.e. restricting variable x[c, r]
+     * to true, will make the bdd unsatisfiable
      */
     private boolean isPositionInvalid(int col, int row) {
         // place a queen at [col, row]
@@ -198,7 +200,8 @@ public class MyLogic implements IQueensLogic {
     }
 
     /**
-     * Check if NOT adding a queen at [c,r] makes the BDD unsatisfiable
+     * Check if NOT adding a queen at [c,r], i.e. restricting variable x[c,r]
+     * to false, makes the BDD unsatisfiable
      */
     private boolean mustThereBeAQueen(int col, int row) {
         // do not place a queen at [col, row]
