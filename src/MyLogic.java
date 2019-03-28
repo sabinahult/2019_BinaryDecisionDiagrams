@@ -91,7 +91,7 @@ public class MyLogic implements IQueensLogic {
 
             // fan out in both diagonals from [c,r] and set the variables to false
             if(left >= 0 && up >= 0) bdd.andWith(fact.nithVar(convertToVarID(left, up)));
-            if(left >=0  && down < size) bdd.andWith(fact.nithVar(convertToVarID(left, down)));
+            if(left >= 0  && down < size) bdd.andWith(fact.nithVar(convertToVarID(left, down)));
             if(right < size && up >= 0) bdd.andWith(fact.nithVar(convertToVarID(right, up)));
             if(right < size && down < size) bdd.andWith(fact.nithVar(convertToVarID(right, down)));
 

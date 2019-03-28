@@ -27,7 +27,7 @@ public class QueensGUI extends JComponent implements MouseListener {
 	
 	public QueensGUI(IQueensLogic logic)  throws IOException {
 		part = ImageIO.read(new File("imgs/maze.png"));
-		queen = ImageIO.read(new File("imgs/queen.png"));
+		queen = ImageIO.read(new File("imgs/freddie.png"));
 		invalid = ImageIO.read(new File("imgs/invalid.png"));
 		backgroundW = ImageIO.read(new File("imgs/backgroundWhite.png"));
         backgroundB = ImageIO.read(new File("imgs/backgroundBlack.png"));
